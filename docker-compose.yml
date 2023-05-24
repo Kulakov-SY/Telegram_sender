@@ -1,0 +1,17 @@
+version: '3.1'
+
+services:
+  bw_upload:
+    container_name: bw_upload
+    image: ferroni-gitlab.tk23.ru:5050/kulakov.sy/bw_upload
+    pull_policy: always
+    restart: always
+    ports:
+      - "8000:8000"
+    networks:
+      - bw_upload
+  
+networks:
+  bw_upload:
+    driver: bridge
+    external: false

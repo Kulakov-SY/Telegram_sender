@@ -1,0 +1,52 @@
+variables:
+  GIT_DEPTH: 15
+  LC_ALL: "en_US.UTF-8"
+  LANG: "en_US.UTF-8"
+  LANGUAGE: "en_US.UTF-8"
+
+stages:
+- build
+- deploy_test
+- deploy_prod
+
+"build":
+  stage: build
+  script:
+    - echo "build image"
+    - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER $CI_REGISTRY --password-stdin
+    - docker build -t $CI_REGISTRY_IMAGE:latest . && docker push $CI_REGISTRY_IMAGE:latest && docker image rm $CI_REGISTRY_IMAGE:latest && docker image prune --filter label=stage=publish --force
+    - docker logout
+  tags:
+    - runner-01
+  only:
+    - dev
+  environment:
+    name: build
+
+"Deploy Test":
+  stage: deploy_test
+  script:
+    - echo "dev"
+    - ssh $HOST_USER@$HOST 'sudo mkdir -p /opt/bw_upload_server/'
+    - scp -r ./docker-compose.yml $HOST_USER@$HOST:~/
+    - ssh $HOST_USER@$HOST 'sudo mv /home/ubuntu/docker-compose.yml /opt/bw_upload_server/docker-compose.yml'
+    - ssh $HOST_USER@$HOST "echo $CI_REGISTRY_PASSWORD | sudo docker login -u $CI_REGISTRY_USER $CI_REGISTRY --password-stdin"
+    - ssh $HOST_USER@$HOST "cd /opt/bw_upload_server && sudo docker compose down && sudo docker compose up -d"
+    - ssh $HOST_USER@$HOST "docker logout $CI_REGISTRY"
+  only:
+    - dev
+  tags:
+    - runner-01
+  environment:
+    name: Test
+
+"Deploy Prod":
+  stage: deploy_prod
+  script:
+    - echo "main"
+  only:
+    - main
+  tags:
+    - runner-01
+  environment:
+    name: Prod

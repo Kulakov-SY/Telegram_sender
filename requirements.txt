@@ -1,0 +1,8 @@
+asyncio
+flask
+aioflask
+aiogram
+asgiref
+win32com
+pythoncom
+PyPDF2
